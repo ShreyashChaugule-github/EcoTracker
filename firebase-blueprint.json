@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with sustainability score, XP, badges, levels, and streak details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique user identifier matching Firebase Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User's email" },
+        "displayName": { "type": "string", "description": "User's screen name" },
+        "level": { "type": "integer", "description": "Eco Warrior Rank/Level" },
+        "totalXp": { "type": "integer", "description": "Total experience points gained from actions" },
+        "currentStreak": { "type": "integer", "description": "Daily tracking streak in days" },
+        "totalCo2Saved": { "type": "number", "description": "Cumulative CO2 saved in kilograms" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "displayName"]
+    },
+    "CarbonLog": {
+      "title": "CarbonLog",
+      "description": "An entry representing a daily carbon footprint calculation in a particular category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record log ID" },
+        "userId": { "type": "string", "description": "Author user's Firebase Auth UID" },
+        "date": { "type": "string", "format": "date", "description": "Calendar date of the footprint" },
+        "category": { "type": "string", "enum": ["transportation", "food", "electricity", "waste", "shopping", "water"] },
+        "amount": { "type": "number", "description": "Raw input value (e.g., miles, kWh, meals, gallons)" },
+        "calculatedCo2": { "type": "number", "description": "Calculated carbon output in kg of CO2 equivalent" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "date", "category", "amount", "calculatedCo2"]
+    },
+    "EcoAction": {
+      "title": "EcoAction",
+      "description": "Green action items accepted, completed, or set as habits, providing CO2 offsets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique action item ID" },
+        "userId": { "type": "string", "description": "The UID who accepted/completed this action" },
+        "title": { "type": "string", "description": "Title of the action" },
+        "category": { "type": "string", "description": "E.g., transport, food, energy, waste" },
+        "co2Reduction": { "type": "number", "description": "Expected CO2 saved per completion of this habit in kg" },
+        "status": { "type": "string", "enum": ["active", "completed"] },
+        "completedDates": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "co2Reduction", "status"]
+    },
+    "OffsetLog": {
+      "title": "OffsetLog",
+      "description": "Log of offset transactions where users fund eco-restoration or carbon offset projects",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "co2Offset": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      },
+      "required": ["id", "userId", "projectName", "amountPaid", "co2Offset", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user registration profiles accessible by the self-owner"
+    },
+    "/carbon_logs/{logId}": {
+      "schema": { "$ref": "#/entities/CarbonLog" },
+      "description": "Contains user-specific daily carbon output data"
+    },
+    "/eco_actions/{actionId}": {
+      "schema": { "$ref": "#/entities/EcoAction" },
+      "description": "Tasks or habits actively targeted by users"
+    },
+    "/offsets/{offsetId}": {
+      "schema": { "$ref": "#/entities/OffsetLog" },
+      "description": "Purchased carbon offset projects logs and stats"
+    }
+  }
+}

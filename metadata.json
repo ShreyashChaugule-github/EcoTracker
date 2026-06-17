@@ -1,0 +1,6 @@
+{
+  "name": "Sustainability Coach",
+  "description": "An interactive sustainability coach and carbon footprint tracker featuring daily logs, green habits, planetary simulation, and AI-powered carbon carbon coaching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
