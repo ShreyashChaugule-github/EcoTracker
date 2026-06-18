@@ -1,76 +1,90 @@
-# EcoTracker
+# EcoTracker — Personal Carbon Tracker
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ShreyashChaugule-github/EcoTracker/ci.yml?branch=main)](https://github.com/ShreyashChaugule-github/EcoTracker/actions)
-[![Docker Image](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/)
-[![Node Version](https://img.shields.io/badge/node-%3E=_18-brightgreen)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://img.shields.io/github/actions/workflow/status/ShreyashChaugule-github/EcoTracker/ci.yml?branch=main&label=CI&style=for-the-badge)](https://github.com/ShreyashChaugule-github/EcoTracker/actions)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Gemini](https://img.shields.io/badge/Gemini-gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://developers.google.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange?style=for-the-badge&logo=firebase&logoColor=white)](https://firebase.google.com/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Krótki przewodnik po projekcie EcoTracker — aplikacji full-stack do śledzenia i redukcji śladu węglowego użytkownika. Ten dokument jest przygotowany dla senior developerów: zawiera diagramy architektury, schematy przepływu technologii, instrukcje uruchomienia, wytyczne bezpieczeństwa i checklistę testów oraz dostępności.
+EcoTracker is a full-stack web application for tracking, visualizing, and reducing personal carbon emissions. It combines a React + Vite SPA with a Node.js + Express backend (bundled via esbuild) and integrates with Google Gemini for AI-driven coaching and Firestore for persistence.
 
-## Spis treści
-- **Przegląd**
-- **Diagram architektury**
-- **Tech stack — flow-chart**
-- **Uruchomienie lokalne**
-- **Budowanie i wdrożenie (Cloud Run)**
-- **Bezpieczeństwo**
-- **Testowanie**
-- **Dostępność**
-- **Szybkie wskazówki dla przeglądu kodu**
+This README provides a senior-developer focused overview: architecture diagrams, code flow charts, tech stack, run/build/test/deploy instructions, security recommendations, accessibility and testing checklists.
+
+## Table of Contents
+- [Architecture](#architecture)
+- [Code Flow & Tech Stack](#code-flow--tech-stack)
+- [Local Development](#local-development)
+- [Build & Production Run](#build--production-run)
+- [Cloud Run Deployment (GCP)](#cloud-run-deployment-gcp)
+- [Secrets & Configuration](#secrets--configuration)
+- [Testing](#testing)
+- [Security & Hardening](#security--hardening)
+- [Accessibility](#accessibility)
+- [Code Review Checklist](#code-review-checklist)
+- [License](#license)
 
 ---
 
-## Przegląd
-EcoTracker to SPA zfrontendowane w React (Vite) i backendem Express (Node.js). Serwer jest bundlowany przez `esbuild` do `dist/server.cjs`. Producent pliku budowy polega na `esbuild` do bundlowania serwera oraz na `vite build` do frontendu. Aplikacja korzysta z Firestore (Firebase) jako źródła prawdy oraz z Google Gemini (`@google/genai`) dla funkcji AI.
-
-Projekt jest przygotowany do uruchomienia w Cloud Run (konteneryzacja Docker). W repo znajduje się wielostopniowy `Dockerfile` optymalizujący rozmiar obrazu runtime.
-
-## Diagram architektury
+## Architecture
 
 ```mermaid
 graph LR
   subgraph Client
-    A[React + Vite SPA] -->|API| B(Server)
+    A[React (Vite) SPA]
   end
 
   subgraph Server
-    B[Node.js / Express]
-    B --> C[Google Gemini API]
-    B --> D[Cloud Firestore]
+    B[Node.js + Express]
+    B -->|Firestore SDK| D[Cloud Firestore]
+    B -->|@google/genai| C[Google Gemini]
+    B -->|adm-zip| Z[Dynamic ZIP generator]
   end
 
   subgraph Cloud
-    E[Container Registry] --> F[Cloud Run]
-    F -->|invokes| B
+    R[Container Registry] --> S[Cloud Run]
     Secrets[Secret Manager] --> B
+    S -->|serves| A
   end
 
+  A -->|REST /api/*| B
   style A fill:#f3f4f6,stroke:#d1d5db
   style B fill:#eef2ff,stroke:#c7d2fe
   style C fill:#fff7ed,stroke:#ffedd5
   style D fill:#ecfccb,stroke:#bbf7d0
-  style F fill:#e0f2fe,stroke:#bae6fd
 ```
 
-Opis: klient (SPA) komunikuje się przez REST API z serwerem Express, który agreguje dane z Firestore i wywołuje Google Gemini. Aplikację wdrażamy jako kontener na Cloud Run, obraz przechowywany w Container Registry. Sekrety (API keys, firebase config) przechowujemy w Secret Manager i podajemy do Cloud Run jako zmienne środowiskowe lub mount.
+High level: the client (React) calls REST endpoints on Express. The server reads/writes Firestore, calls Gemini for AI features, and serves the built static files in production. The app is packaged into a container image (multistage Dockerfile included) and deployed to Cloud Run.
 
-## Tech-stack — flow-chart
+## Code Flow & Tech Stack
 
 ```mermaid
 flowchart TD
-  A[Developer] -->|dev server| B[Vite (frontend)]
-  B --> C[React Components]
-  A -->|server dev| D[tsx (dev runner)]
-  D --> E[Express server]
-  E --> F[esbuild bundle -> dist/server.cjs]
-  E --> G[Firestore]
-  E --> H[Google Gemini (@google/genai)]
-  E --> I[adm-zip (download package)]
+  Dev[Developer] -->|dev server| Vite[Vite middleware]
+  Vite --> SPA[React components]
+  Dev -->|ts dev runner| TSX[tsx (dev runner)]
+  TSX --> Server[Express server]
+  Server -->|esbuild| Dist[dist/server.cjs]
+  Server --> Firestore[Cloud Firestore]
+  Server --> Gemini[Google Gemini (@google/genai)]
 ```
 
-## Uruchomienie lokalne (dla senior dev)
+Primary technologies:
+- Frontend: React 19, Vite, Tailwind CSS, Recharts, lucide-react icons
+- Backend: Node.js 18+, Express, esbuild for bundling
+- AI: Google Gemini via `@google/genai`
+- Database: Google Cloud Firestore (with local `local_database.json` fallback)
+- Dev tools: tsx (dev runner), TypeScript
+- CI/CD: Cloud Build / GitHub Actions (suggested)
+- Container: Docker multistage image (see `Dockerfile`)
 
-1. Skopiuj repo i zainstaluj zależności:
+## Local Development
+
+Prerequisites: Node.js >=18, npm, Google Cloud SDK (optional for deploy)
+
+1. Install dependencies
 
 ```bash
 git clone https://github.com/ShreyashChaugule-github/EcoTracker.git
@@ -78,37 +92,54 @@ cd EcoTracker
 npm ci
 ```
 
-2. Uruchom serwer development (Vite middleware + Express):
+2. Run dev server (Vite middleware + Express)
 
 ```bash
 npm run dev
-# Serwer uruchomi się na http://0.0.0.0:8080 lub http://localhost:8080
+# Dev server listens on PORT (defaults to 8080)
 ```
 
-3. Budowanie produkcyjne (tworzy `dist/server.cjs`):
+3. Build for production
 
 ```bash
 npm run build
 ```
 
-4. Smoke test (skrypt uruchamia zbudowany serwer i testuje `/api/health`):
+4. Run built server locally (after build)
 
 ```bash
-npm test
+node dist/server.cjs
+# or use the provided smoke-test: npm test
 ```
 
-## Wdrożenie: Cloud Run (skrót)
+## Build & Production Run (Docker)
 
-- Projekt GCP: `ecotracker-499709` (używane w przykładach)
-- Buduj i wypchnij obraz:
+Build a production image locally:
 
 ```bash
+# from project root
+docker build -t gcr.io/<PROJECT_ID>/ecotracker:latest .
+```
+
+Run locally:
+
+```bash
+docker run -p 8080:8080 \
+  -e PORT=8080 \
+  -e GEMINI_API_KEY="<your_key>" \
+  -e FIREBASE_CONFIG='{"projectId":"..."}' \
+  gcr.io/<PROJECT_ID>/ecotracker:latest
+```
+
+## Cloud Run Deployment (GCP)
+
+This project was prepared to deploy to Cloud Run. Example using project id `ecotracker-499709`:
+
+```bash
+# Build & push using Cloud Build
 gcloud builds submit --tag gcr.io/ecotracker-499709/ecotracker --project=ecotracker-499709
-```
 
-- Wdrażanie do Cloud Run:
-
-```bash
+# Deploy to Cloud Run
 gcloud run deploy ecotracker \
   --image gcr.io/ecotracker-499709/ecotracker \
   --platform managed \
@@ -117,78 +148,80 @@ gcloud run deploy ecotracker \
   --project ecotracker-499709
 ```
 
-## Sekrety i konfiguracja
-
-- Nigdy nie commituj kluczy API ani `firebase-applet-config.json` do repo. Używaj Secret Manager.
-- Przykład tworzenia sekretu:
+Inject secrets from Secret Manager (recommended):
 
 ```bash
+# create secret
 echo -n "YOUR_GEMINI_KEY" | gcloud secrets create gemini-api-key --data-file=- --project=ecotracker-499709
+
+# deploy and bind secret as env var
+gcloud run deploy ecotracker \
+  --image gcr.io/ecotracker-499709/ecotracker \
+  --set-secrets GEMINI_API_KEY=gemini-api-key:latest \
+  --platform managed --region us-central1 --project ecotracker-499709
 ```
 
-- Podczas wdrożenia Cloud Run powiąż sekret jako zmienną środowiskową:
+Do not commit secrets or `firebase-applet-config.json` into the repository.
 
-```bash
-gcloud run deploy ecotracker --image gcr.io/ecotracker-499709/ecotracker \
-  --set-secrets GEMINI_API_KEY=gemini-api-key:latest --region us-central1 --project=ecotracker-499709
-```
+## Secrets & Configuration
 
-## Bezpieczeństwo (zalecenia dla senior dev)
+- The app loads `firebase-applet-config.json` at runtime if present. For production, provide Firestore credentials via environment or Secret Manager.
+- Required env variables (recommended):
+  - `GEMINI_API_KEY` — Google Gemini API key
+  - `PORT` — runtime port (Cloud Run sets this automatically)
 
-- W produkcji włącz CSP (`helmet`) z restrykcyjnymi dyrektywami.
-- Upewnij się, że Cloud Run nie ujawnia nadmiernych uprawnień; używaj najniższych możliwych uprawnień dla serwis account.
-- Weryfikuj i waliduj wszystkie wejścia (używamy `express-validator`).
-- Ogranicz logowanie danych wrażliwych (maskuj/anonimizuj).
+## Testing
 
-## Testowanie
+- `npm test` runs a smoke test that builds the app and checks `/api/health` (see `test/run-healthcheck.js`).
+- Recommended: add `jest` + `supertest` for integration tests (endpoints: `/api/profile/:userId`, `/api/carbon/logs`, `/api/health`, AI endpoints).
 
-- `npm test` uruchamia prosty smoke test: buduje i sprawdza `/api/health`.
-- Dodaj testy integracyjne z `jest` + `supertest` dla kluczowych endpointów (`/api/profile/:userId`, `/api/carbon/logs`, `/api/health`).
+Suggested test strategy:
+- Unit: CO2 conversion functions and reward logic
+- Integration: server endpoints using local `local_database.json` fallback
+- E2E: build image and run containerized health-check
 
-Przykładowe test checklist:
-- Unit: walidacja algorytmów obliczania CO2
-- Integration: zapisy i odczyty do lokalnej `local_database.json` (fallback)
-- E2E: symulacja użytkownika tworzącego log emisji i pobierającego statystyki
+## Security & Hardening
 
-## Accessibility — checklista
+- Serve secrets from Secret Manager, never embed keys in images.
+- In production enable strict `helmet` CSP directives and disable relaxed policies.
+- Use least-privilege service account for Cloud Run; restrict Firestore rules in `firestore.rules`.
+- Rate-limit AI endpoints (already using `express-rate-limit`).
+- Sanitize and validate all incoming payloads (`express-validator` used).
 
-- Każda interaktywna kontrolka powinna mieć `aria-*` atrybuty i opis (`title`/`aria-label`).
-- Kontrast kolorów i skalowalność czcionek (WCAG AA).
-- Formularze muszą mieć powiązane `label` i logiczną kolejność focus.
-- Recharts: zapewnić alternatywny tekst lub tabele danych dla wykresów.
+## Accessibility
 
-## Szybkie wskazówki przeglądowe (code-review focus)
+- Use semantic HTML and ensure critical interactive elements include `aria-*` attributes or `aria-label` where needed.
+- Ensure color contrast meets WCAG AA.
+- Provide alternative data (tables) or accessible descriptions for charts (Recharts) for screen readers.
 
-- Szukaj miejsca wycieków pamięci i długich operacji blokujących w endpointach AI (timeouty dla wywołań zewnętrznych).
-- Weryfikuj fallback do `local_database.json` — testuj scentralizowane przypadki offline.
-- Upewnij się, że bundle serwera (`dist/server.cjs`) nie zawiera sekretnych stringów.
-- Sprawdź reguły `firestore.rules` oraz `firebase-applet-config.example` przed produkcyjnym połączeniem.
+## Code Review Checklist (Senior Dev)
+
+- Ensure no secrets in `dist/server.cjs` after build.
+- Check Firestore access patterns for excessive reads/writes and optimize with indexes.
+- Validate timeouts and error handling for external calls to Gemini (avoid blocking requests).
+- Verify `local_database.json` fallback behavior under offline conditions.
+- Confirm static assets are served with caching headers in production (server sets `maxAge`).
+
+## Files Of Interest
+
+- `server.ts` — Express server + API endpoints
+- `src/` — React frontend (Vite)
+- `Dockerfile` — multistage build for Cloud Run
+- `.dockerignore` — files excluded from the build context
+- `test/run-healthcheck.js` — smoke test script
+- `firebase-applet-config.example` — example Firebase config
+
+## Contributing
+
+Please follow the repo's linting and TypeScript rules. Run `npm run lint` before opening PRs. Add unit/integration tests for new features and endpoint changes.
+
+## License
+
+This project is licensed under the MIT License — see `LICENSE`.
 
 ---
 
-Jeśli chcesz, przygotuję też:
-- `cloudbuild.yaml` dla reproducible builds
-- przykładowe testy `jest` + `supertest`
-- `deploy.sh` automatyzujący push obrazu i deploy z Secret Manager
-
-Daj znać, które z tych dodatkowych elementów mam dodać teraz.
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
-
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/283fd0dc-c7ee-47e7-9517-e64c8e2b0da7
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+If you want, I can also add:
+- a `cloudbuild.yaml` for reproducible builds,
+- a `deploy.sh` script that automates building, pushing, and deploying (with secret binding),
+- a basic `jest` + `supertest` test suite template.
