@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
+import compression from "compression";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { body, validationResult } from "express-validator";
@@ -239,7 +240,10 @@ const ai = new GoogleGenAI({
 });
 
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "8080", 10);
+
+// Security: hide implementation details
+app.disable("x-powered-by");
 
 // Rate limiting setup
 const limiter = rateLimit({
@@ -251,16 +255,39 @@ const limiter = rateLimit({
 });
 
 // Apply Security Middlewares
-app.use(helmet({
-  frameguard: false, // Disables X-Frame-Options to allow rendering in the AI Studio preview iframe
-  crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: false,
-  crossOriginResourcePolicy: false,
-  contentSecurityPolicy: false,
-}));
+if (process.env.NODE_ENV === "production") {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "https:"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: ["'self'", "https:"],
+        },
+      },
+    })
+  );
+} else {
+  // relaxed for local dev & AI studio preview
+  app.use(
+    helmet({
+      frameguard: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: false,
+      contentSecurityPolicy: false,
+    })
+  );
+}
+
 app.use(cors());
 app.use(limiter);
 app.use(express.json());
+
+// Performance: compress responses and add caching for static assets in production
+app.use(compression());
 
 // Operation type descriptor for error management
 enum OperationType {
@@ -999,15 +1026,20 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { maxAge: "1d", index: false }));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
-
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`EcoTracker Server running flawlessly on http://0.0.0.0:${PORT}`);
+    console.log(`EcoTracker Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
-startServer();
+// Export app for testing and server start control
+export { app, startServer };
+
+// Auto-start unless in test mode
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}

@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.env
+local_database.json
+*.log
+npm-debug.log*
+Dockerfile
+firebase-applet-config.json
+firebase-applet-config.example
+coverage
+/.cache
+tmp
+build
