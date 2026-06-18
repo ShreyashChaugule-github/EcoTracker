@@ -49,7 +49,7 @@ export default function Header({ displayName, level, totalXp, streak, onLogout }
           <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider shrink-0">XP</span>
           <div className="relative w-full h-2.5 bg-slate-100 border border-slate-200 rounded-full overflow-hidden">
             <div 
-              className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-500"
+              className="absolute left-0 top-0 h-full bg-linear-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-500"
               style={{ width: `${xpPercent}%` }}
             />
           </div>
