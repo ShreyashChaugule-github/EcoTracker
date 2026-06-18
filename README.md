@@ -48,27 +48,47 @@
 
 ## 🗺️ Architecture (diagram)
 
+## 🏗️ Architecture
+
 ```mermaid
-graph LR
-  subgraph Client
-    A[React + Vite SPA]
-  end
+graph TD
 
-  subgraph Server
-    B[Node.js + Express]
-    B --> C[Google Gemini (@google/genai)]
-    B --> D[Cloud Firestore]
-    B --> E[local_database.json fallback]
-  end
+    User[User]
 
-  subgraph Cloud
-    R[Container Registry] --> S[Cloud Run]
-    Secrets[Secret Manager] --> B
-  end
+    subgraph Frontend
+        UI[React 19 + Vite]
+        Charts[Analytics Dashboard]
+    end
 
-  A -->|REST| B
-  B -->|reads/writes| D
-  B -->|AI calls| C
+    subgraph Backend
+        API[Express API Server]
+        AI[AI Sustainability Coach]
+        Carbon[Carbon Analytics Engine]
+    end
+
+    subgraph Data Layer
+        Firestore[Cloud Firestore]
+        LocalDB[Local JSON Fallback]
+    end
+
+    subgraph Google Cloud
+        Gemini[Google Gemini]
+        CloudRun[Cloud Run]
+        Secrets[Secret Manager]
+    end
+
+    User --> UI
+    UI --> API
+
+    API --> Carbon
+    API --> AI
+
+    AI --> Gemini
+    API --> Firestore
+    API --> LocalDB
+
+    Secrets --> API
+    CloudRun --> API
 ```
 
 ---
