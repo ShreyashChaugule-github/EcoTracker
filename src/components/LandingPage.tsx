@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Leaf, Sparkles, ArrowRight, X, Mail, User, Info, CheckCircle2, ShieldCheck } from "lucide-react";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 
 interface LandingPageProps {
@@ -15,6 +15,32 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
   const [name, setName] = useState("");
   const [errorInput, setErrorInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check for Google Auth redirect result on mount
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          const user = result.user;
+          const userEmail = user.email || "google.warrior@example.com";
+          const userDisplayName = user.displayName || userEmail.split("@")[0] || "Eco-Warrior";
+          onLoginSuccess(userEmail, userDisplayName);
+        }
+      } catch (e: any) {
+        console.error("Google Redirect Auth failed:", e);
+        let errMsg = "Google Auth failed. ";
+        if (e.code === "auth/unauthorized-domain") {
+           errMsg += "This domain is not authorized in the Firebase Console.";
+        } else {
+           errMsg += e.message || "Unknown error occurred.";
+        }
+        setErrorInput(errMsg);
+        setShowAuthModal(true);
+      }
+    };
+    checkRedirect();
+  }, [onLoginSuccess]);
 
   // Helper to sanitize/generate deterministic userId from email
   const handleAuthSubmit = (e: React.FormEvent) => {
@@ -47,14 +73,12 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
       // Check if we are running in an iframe
       const isInIframe = window.self !== window.top;
       if (isInIframe) {
-        console.warn("Detected iframe environment. Google Sign-In popups require opening the application in a 'New Tab' due to browser security restrictions.");
+        console.warn("Detected iframe environment. Google Sign-In redirects may be blocked if cross-origin rules apply. Open in New Tab if issues occur.");
       }
 
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const userEmail = user.email || "google.warrior@example.com";
-      const userDisplayName = user.displayName || userEmail.split("@")[0] || "Eco-Warrior";
-      onLoginSuccess(userEmail, userDisplayName);
+      // Use redirect instead of popup to fix Safari blocking issues
+      await signInWithRedirect(auth, googleProvider);
+      // Note: No code executes after this point because the page redirects to Google.
     } catch (e: any) {
       console.error("Google Auth failed:", e);
       let errMsg = "";

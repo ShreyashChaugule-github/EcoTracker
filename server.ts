@@ -15,16 +15,36 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Resolve paths for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-// Read Firebase Applet Configuration
-const firebaseConfigPath = path.join(process.cwd(), "firebase-applet-config.json");
-let firebaseConfig: any = {};
-if (fs.existsSync(firebaseConfigPath)) {
-  firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf-8"));
+
+// Load Firebase config: env vars take priority (Cloud Run / production).
+// Falls back to local firebase-applet-config.json for development.
+function loadFirebaseConfig(): Record<string, string> {
+  // If the primary env var is set, build config entirely from env
+  if (process.env.FIREBASE_API_KEY) {
+    console.log("Loading Firebase config from environment variables.");
+    return {
+      apiKey:            process.env.FIREBASE_API_KEY!,
+      authDomain:        process.env.FIREBASE_AUTH_DOMAIN || "",
+      projectId:         process.env.FIREBASE_PROJECT_ID || "",
+      storageBucket:     process.env.FIREBASE_STORAGE_BUCKET || "",
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "",
+      appId:             process.env.FIREBASE_APP_ID || "",
+      measurementId:     process.env.FIREBASE_MEASUREMENT_ID || "",
+      firestoreDatabaseId: process.env.FIRESTORE_DATABASE_ID || "(default)",
+    };
+  }
+  // Local development fallback — read firebase-applet-config.json
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    console.log("Loading Firebase config from firebase-applet-config.json.");
+    return JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  }
+  console.warn("No Firebase config found (no env vars, no config file). Firestore will use local fallback.");
+  return {};
 }
+
+const firebaseConfig = loadFirebaseConfig();
 
 // Initialize Firebase SDK on server
 const firebaseApp = initializeApp(firebaseConfig);
@@ -215,7 +235,7 @@ import { getDocFromServer } from "firebase/firestore";
 async function checkFirestoreConnection() {
   try {
     console.log("Locating Cloud Firestore server on project:", firebaseConfig.projectId);
-    const testDoc = doc(db, "_test_connection_", "ping");
+    const testDoc = doc(db, "users", "ping");
     await Promise.race([
       getDocFromServer(testDoc),
       new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout connecting to Firestore")), 1500))
@@ -230,11 +250,21 @@ async function checkFirestoreConnection() {
 checkFirestoreConnection();
 
 // Initialize Gemini SDK securely on the server
+// Initialize Gemini via Vertex AI.
+// Uses Application Default Credentials (ADC) — no API key needed.
+// On Cloud Run, ADC automatically uses the attached service account.
+// Locally, run: gcloud auth application-default login
+const VERTEX_PROJECT  = process.env.VERTEX_PROJECT  || firebaseConfig.projectId || "ecotracker-499709";
+const VERTEX_LOCATION = process.env.VERTEX_LOCATION || "us-central1";
+console.log(`Gemini via Vertex AI — project: ${VERTEX_PROJECT}, location: ${VERTEX_LOCATION}`);
+
 const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
+  vertexai: true,
+  project:  VERTEX_PROJECT,
+  location: VERTEX_LOCATION,
   httpOptions: {
     headers: {
-      "User-Agent": "aistudio-build",
+      "User-Agent": "ecotracker-server",
     },
   },
 });
@@ -686,9 +716,9 @@ app.post(
         "applicable to their profile. Use clean formatting, bold key advice, and bullet points. " +
         "Greet them enthusiastically and keep motivation high!";
 
-      // Invoke Gemini API securely
+      // Invoke Gemini via Vertex AI
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.0-flash-001",
         contents: [
           { role: "user", parts: [{ text: `SYSTEM_CONTEXT: ${systemInstruction}\nUSER_CARBON_DATA:\n${contextStr}\n\nUser Question: ${message}` }] }
         ]
@@ -731,7 +761,7 @@ app.post("/api/carbon/assessment", [body("userId").isString().notEmpty()], async
       "Write in clear, beautiful Markdown with elegant spacers.";
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.0-flash-001",
       contents: [
         { role: "user", parts: [{ text: `${aiPrompt}\n\nUser Carbon Data:\n${summaryStr}` }] }
       ]
@@ -1015,8 +1045,16 @@ app.get("/api/download-zip", (req, res) => {
   }
 });
 
+import { createProxyMiddleware } from "http-proxy-middleware";
+
 // --- VITE MIDDLEWARE CONFIGURATION ---
 async function startServer() {
+  // Proxy /__/auth to Firebase to prevent cross-origin iframe issues
+  app.use('/__/auth', createProxyMiddleware({
+    target: `https://${firebaseConfig.projectId}.firebaseapp.com`,
+    changeOrigin: true,
+  }));
+
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
