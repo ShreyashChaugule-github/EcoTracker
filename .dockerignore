@@ -6,7 +6,9 @@ local_database.json
 *.log
 npm-debug.log*
 Dockerfile
-firebase-applet-config.json
+cloudbuild.yaml
+.gcloudignore
+# firebase-applet-config.json - include in Docker build
 firebase-applet-config.example
 coverage
 /.cache
