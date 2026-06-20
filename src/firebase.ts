@@ -8,29 +8,40 @@ import { getFirestore } from "firebase/firestore";
 // In local development they are read from firebase-applet-config.json by Vite.
 // No JSON file import needed here — vite.config.ts handles it all.
 // ---------------------------------------------------------------------------
-const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            as string,
-  authDomain:        window.location.host, // Dynamically use the current host to prevent CSP/framing issues
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID         as string,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     as string,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID             as string,
-  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID     as string,
-};
+// Only initialize Firebase when real config keys are present.
+const hasFirebaseConfig = typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY);
 
-const firestoreDatabaseId = import.meta.env.VITE_FIRESTORE_DATABASE_ID as string || "(default)";
+let db: any = null;
+let auth: any = null;
+let googleProvider: any = null;
 
-// Initialize Firebase App
-const app = initializeApp(firebaseConfig);
+if (hasFirebaseConfig) {
+  const firebaseConfig = {
+    apiKey:            (import.meta as any).env.VITE_FIREBASE_API_KEY as string,
+    authDomain:        typeof window !== 'undefined' ? window.location.host : 'localhost',
+    projectId:         (import.meta as any).env.VITE_FIREBASE_PROJECT_ID as string,
+    storageBucket:     (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET as string,
+    messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
+    appId:             (import.meta as any).env.VITE_FIREBASE_APP_ID as string,
+    measurementId:     (import.meta as any).env.VITE_FIREBASE_MEASUREMENT_ID as string,
+  };
 
-// Initialize Firestore — use named DB if configured (e.g. "ecotracker")
-export const db = firestoreDatabaseId && firestoreDatabaseId !== "(default)"
-  ? getFirestore(app, firestoreDatabaseId)
-  : getFirestore(app);
+  const firestoreDatabaseId = ((import.meta as any).env.VITE_FIRESTORE_DATABASE_ID as string) || '(default)';
 
-// Initialize Firebase Auth
-export const auth = getAuth(app);
+  // Initialize Firebase App
+  const app = initializeApp(firebaseConfig);
 
-// Google Auth Provider
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: "select_account" });
+  // Initialize Firestore — use named DB if configured (e.g. "ecotracker")
+  db = firestoreDatabaseId && firestoreDatabaseId !== '(default)'
+    ? getFirestore(app, firestoreDatabaseId)
+    : getFirestore(app);
+
+  // Initialize Firebase Auth
+  auth = getAuth(app);
+
+  // Google Auth Provider
+  googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
+}
+
+export { db, auth, googleProvider };
