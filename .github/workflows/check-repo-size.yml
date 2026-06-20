@@ -1,0 +1,31 @@
+name: Check repository size
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  repo-size-check:
+    name: Ensure repo size <= 10 MB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate repository size and fail if over limit
+        run: |
+          set -euo pipefail
+          # Sum sizes of all tracked blobs at HEAD (bytes)
+          total=$(git ls-tree -r --long HEAD | awk '{sum += $4} END {print sum+0}')
+          # If git ls-tree returned nothing (empty repo), fallback to du
+          if [ -z "$total" ] || [ "$total" -eq 0 ]; then
+            total=$(du -sb . | cut -f1)
+          fi
+          echo "Repository size in bytes: $total"
+          max=$((10 * 1024 * 1024))
+          if [ "$total" -gt "$max" ]; then
+            echo "ERROR: Repository exceeds 10 MB limit ($total bytes > $max bytes)." >&2
+            exit 1
+          fi
