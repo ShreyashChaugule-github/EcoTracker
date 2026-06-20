@@ -11,6 +11,7 @@
     "lint": "eslint --ext .ts,.tsx src server.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "test": "vitest run",
+    "test:coverage": "c8 --reporter=lcov --reporter=text-summary vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -48,7 +49,9 @@
     "@types/react-dom": "^18.3.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "autoprefixer": "^10.4.21",
+    "c8": "^11.0.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.48.0",
     "eslint-config-prettier": "^9.0.0",

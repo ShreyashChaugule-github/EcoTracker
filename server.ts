@@ -1159,6 +1159,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 
 // --- VITE MIDDLEWARE CONFIGURATION ---
 async function startServer() {
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST_WORKER_ID !== undefined;
   // Proxy /__/auth to Firebase to prevent cross-origin iframe issues
   app.use(
     '/__/auth',
@@ -1168,7 +1169,7 @@ async function startServer() {
     })
   );
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !isTestEnv) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -1190,7 +1191,10 @@ async function startServer() {
 // Export app for testing and server start control
 export { app, startServer };
 
-// Auto-start unless in test mode
+// Always expose startServer on globalThis so test harnesses can start it.
+(globalThis as any).__startServer = startServer;
+
+// Auto-start the server unless running under test environment.
 if (process.env.NODE_ENV !== 'test') {
   startServer();
 }

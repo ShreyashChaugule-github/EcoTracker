@@ -9,8 +9,8 @@ import { getFirestore } from 'firebase/firestore';
 // No JSON file import needed here — vite.config.ts handles it all.
 // ---------------------------------------------------------------------------
 // Only initialize Firebase when real config keys are present.
-const hasFirebaseConfig =
-  typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY);
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST_WORKER_ID !== undefined;
+const hasFirebaseConfig = !isTestEnv && typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY);
 
 let db: any = null;
 let auth: any = null;
