@@ -91,7 +91,6 @@ graph TD
     CloudRun --> API
 ```
 
-
 ---
 
 ## 🧩 Code Flow
@@ -214,4 +213,5 @@ gcloud run deploy ecotracker \
 - `local_database.json` — local fallback DB (do not use in production)
 
 ---
+
 Created with ❤️ for Prompt Wars Challenge 3.

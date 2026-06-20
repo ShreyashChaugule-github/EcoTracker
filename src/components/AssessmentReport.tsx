@@ -1,30 +1,34 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { Sparkles, Leaf, BookOpen, ChevronRight, AlertCircle } from "lucide-react";
+import React, { useState } from 'react';
+import axios from 'axios';
+import { Sparkles, Leaf, BookOpen, ChevronRight, AlertCircle } from 'lucide-react';
 
 interface AssessmentReportProps {
   userId: string;
 }
 
 export default function AssessmentReport({ userId }: AssessmentReportProps) {
-  const [report, setReport] = useState<string>("");
+  const [report, setReport] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const triggerAssessment = async () => {
     try {
       setLoading(true);
-      setError("");
+      setError('');
       // Call Express assessment endpoint
-      const response = await axios.post("/api/carbon/assessment", { userId });
+      const response = await axios.post('/api/carbon/assessment', { userId });
       if (response.data && response.data.report) {
         setReport(response.data.report);
       } else {
-        setReport("### 🪵 Analytics Connection Lagged\n\nUnable to generate Gemini profile context right now.");
+        setReport(
+          '### 🪵 Analytics Connection Lagged\n\nUnable to generate Gemini profile context right now.'
+        );
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to generate custom assessment report. Ensure you have submitted log entries in the dashboard!");
+      setError(
+        'Failed to generate custom assessment report. Ensure you have submitted log entries in the dashboard!'
+      );
     } finally {
       setLoading(false);
     }
@@ -32,23 +36,23 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
 
   // Basic lightweight renderer for Gemini Assessment markdown
   const renderMarkdown = (txt: string) => {
-    const lines = txt.split("\n");
+    const lines = txt.split('\n');
     return lines.map((line, idx) => {
       let isHeading = false;
       let isNumBullet = false;
       let isBullet = false;
       let cleanLine = line;
 
-      if (line.startsWith("### ")) {
+      if (line.startsWith('### ')) {
         cleanLine = line.substring(4);
         isHeading = true;
-      } else if (line.startsWith("## ")) {
+      } else if (line.startsWith('## ')) {
         cleanLine = line.substring(3);
         isHeading = true;
       } else if (line.match(/^\d+\.\s/)) {
-        cleanLine = line.replace(/^\d+\.\s/, "");
+        cleanLine = line.replace(/^\d+\.\s/, '');
         isNumBullet = true;
-      } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      } else if (line.startsWith('- ') || line.startsWith('* ')) {
         cleanLine = line.substring(2);
         isBullet = true;
       }
@@ -63,7 +67,11 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
         if (match.index > lastIndex) {
           parts.push(cleanLine.substring(lastIndex, match.index));
         }
-        parts.push(<strong key={match.index} className="text-emerald-700 font-bold">{match[1]}</strong>);
+        parts.push(
+          <strong key={match.index} className="text-emerald-700 font-bold">
+            {match[1]}
+          </strong>
+        );
         lastIndex = boldRegex.lastIndex;
       }
       if (lastIndex < cleanLine.length) {
@@ -74,22 +82,33 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
 
       if (isHeading) {
         return (
-          <h4 key={idx} className="text-emerald-700 font-bold font-sans text-sm mt-5 mb-2.5 border-b border-slate-250 pb-1.5 select-none uppercase tracking-wide">
+          <h4
+            key={idx}
+            className="text-emerald-700 font-bold font-sans text-sm mt-5 mb-2.5 border-b border-slate-250 pb-1.5 select-none uppercase tracking-wide"
+          >
             {content}
           </h4>
         );
       }
       if (isNumBullet) {
         return (
-          <div key={idx} className="flex gap-2 items-start my-1.5 text-[11.5px] leading-relaxed text-slate-750">
-            <span className="font-mono text-emerald-600 font-bold shrink-0">{line.match(/^\d+/)?.[0]}.</span>
+          <div
+            key={idx}
+            className="flex gap-2 items-start my-1.5 text-[11.5px] leading-relaxed text-slate-750"
+          >
+            <span className="font-mono text-emerald-600 font-bold shrink-0">
+              {line.match(/^\d+/)?.[0]}.
+            </span>
             <span>{content}</span>
           </div>
         );
       }
       if (isBullet) {
         return (
-          <li key={idx} className="ml-4 list-disc text-slate-600 text-[11.5px] leading-relaxed my-1">
+          <li
+            key={idx}
+            className="ml-4 list-disc text-slate-600 text-[11.5px] leading-relaxed my-1"
+          >
             {content}
           </li>
         );
@@ -104,14 +123,20 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
   };
 
   return (
-    <div id="assessment-report-panel" className="bg-white border border-slate-200 p-6 rounded-3xl h-[calc(100vh-140px)] flex flex-col justify-between overflow-hidden shadow-xs">
-      
+    <div
+      id="assessment-report-panel"
+      className="bg-white border border-slate-200 p-6 rounded-3xl h-[calc(100vh-140px)] flex flex-col justify-between overflow-hidden shadow-xs"
+    >
       {/* Title */}
       <div className="shrink-0 border-b border-slate-100 pb-4 mb-4 select-none">
         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          Intelligent AI Carbon Assessment <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
+          Intelligent AI Carbon Assessment{' '}
+          <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
         </h3>
-        <p className="text-[10px] text-slate-500">Deep audit scans of your real logs to identify biggest consumer categories & emission trends</p>
+        <p className="text-[10px] text-slate-500">
+          Deep audit scans of your real logs to identify biggest consumer categories & emission
+          trends
+        </p>
       </div>
 
       {/* Main viewer */}
@@ -123,9 +148,12 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
               <div className="absolute inset-0 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
               <Leaf className="w-6 h-6 text-emerald-600 animate-pulse" />
             </div>
-            <h4 className="text-sm text-slate-900 font-bold mb-1">Synthesizing Carbon Audit Data...</h4>
+            <h4 className="text-sm text-slate-900 font-bold mb-1">
+              Synthesizing Carbon Audit Data...
+            </h4>
             <p className="text-[10.5px] text-slate-500 font-mono text-center max-w-sm px-4">
-              Google Gemini is parsing active databases, categories, offsets, and avoidance habits to generate actionable micro-strategies.
+              Google Gemini is parsing active databases, categories, offsets, and avoidance habits
+              to generate actionable micro-strategies.
             </p>
           </div>
         ) : error ? (
@@ -134,7 +162,10 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
             <span>{error}</span>
           </div>
         ) : report ? (
-          <div id="markdown-scroller" className="bg-slate-50 rounded-2xl border border-slate-200 p-6 shadow-inner relative animate-fadeIn">
+          <div
+            id="markdown-scroller"
+            className="bg-slate-50 rounded-2xl border border-slate-200 p-6 shadow-inner relative animate-fadeIn"
+          >
             {renderMarkdown(report)}
           </div>
         ) : (
@@ -142,7 +173,8 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
             <Sparkles className="w-10 h-10 text-emerald-600 mb-3 animate-pulse" />
             <h4 className="text-sm font-bold text-slate-900 mb-1.5">No Active Assessment Report</h4>
             <p className="text-[11px] text-slate-500 max-w-md leading-relaxed mb-4">
-              Unlock a full diagnostics evaluation based on your logged carbon events. Our AI coach analyzes weekly stats to emit micro-audits!
+              Unlock a full diagnostics evaluation based on your logged carbon events. Our AI coach
+              analyzes weekly stats to emit micro-audits!
             </p>
             <button
               onClick={triggerAssessment}
@@ -164,7 +196,6 @@ export default function AssessmentReport({ userId }: AssessmentReportProps) {
           </button>
         </div>
       )}
-
     </div>
   );
 }

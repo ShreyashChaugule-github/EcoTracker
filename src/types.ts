@@ -10,7 +10,13 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-export type CarbonCategory = "transportation" | "food" | "electricity" | "waste" | "shopping" | "water";
+export type CarbonCategory =
+  | 'transportation'
+  | 'food'
+  | 'electricity'
+  | 'waste'
+  | 'shopping'
+  | 'water';
 
 export interface CarbonLog {
   id: string;
@@ -28,7 +34,7 @@ export interface EcoAction {
   title: string;
   category: string;
   co2Reduction: number;
-  status: "active" | "completed";
+  status: 'active' | 'completed';
   completedDates: string[]; // dates on which it was done
   createdAt: string;
 }

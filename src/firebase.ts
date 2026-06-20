@@ -1,6 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // ---------------------------------------------------------------------------
 // Firebase config — values are baked in at build time by vite.config.ts.
@@ -9,7 +9,8 @@ import { getFirestore } from "firebase/firestore";
 // No JSON file import needed here — vite.config.ts handles it all.
 // ---------------------------------------------------------------------------
 // Only initialize Firebase when real config keys are present.
-const hasFirebaseConfig = typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY);
+const hasFirebaseConfig =
+  typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY);
 
 let db: any = null;
 let auth: any = null;
@@ -17,24 +18,26 @@ let googleProvider: any = null;
 
 if (hasFirebaseConfig) {
   const firebaseConfig = {
-    apiKey:            (import.meta as any).env.VITE_FIREBASE_API_KEY as string,
-    authDomain:        typeof window !== 'undefined' ? window.location.host : 'localhost',
-    projectId:         (import.meta as any).env.VITE_FIREBASE_PROJECT_ID as string,
-    storageBucket:     (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET as string,
+    apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY as string,
+    authDomain: typeof window !== 'undefined' ? window.location.host : 'localhost',
+    projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID as string,
+    storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET as string,
     messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
-    appId:             (import.meta as any).env.VITE_FIREBASE_APP_ID as string,
-    measurementId:     (import.meta as any).env.VITE_FIREBASE_MEASUREMENT_ID as string,
+    appId: (import.meta as any).env.VITE_FIREBASE_APP_ID as string,
+    measurementId: (import.meta as any).env.VITE_FIREBASE_MEASUREMENT_ID as string,
   };
 
-  const firestoreDatabaseId = ((import.meta as any).env.VITE_FIRESTORE_DATABASE_ID as string) || '(default)';
+  const firestoreDatabaseId =
+    ((import.meta as any).env.VITE_FIRESTORE_DATABASE_ID as string) || '(default)';
 
   // Initialize Firebase App
   const app = initializeApp(firebaseConfig);
 
   // Initialize Firestore — use named DB if configured (e.g. "ecotracker")
-  db = firestoreDatabaseId && firestoreDatabaseId !== '(default)'
-    ? getFirestore(app, firestoreDatabaseId)
-    : getFirestore(app);
+  db =
+    firestoreDatabaseId && firestoreDatabaseId !== '(default)'
+      ? getFirestore(app, firestoreDatabaseId)
+      : getFirestore(app);
 
   // Initialize Firebase Auth
   auth = getAuth(app);

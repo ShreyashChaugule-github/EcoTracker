@@ -1,60 +1,75 @@
-import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import axios from "axios";
-import { MessageSquare, Send, Sparkles, Leaf, Trash2, AlertCircle, X } from "lucide-react";
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import axios from 'axios';
+import { MessageSquare, Send, Sparkles, Leaf, Trash2, AlertCircle, X } from 'lucide-react';
 
 interface CarbonCoachProps {
   userId: string;
 }
 
 interface ChatMessage {
-  role: "user" | "model";
+  role: 'user' | 'model';
   text: string;
 }
 
 export default function CarbonCoach({ userId }: CarbonCoachProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "model", text: "Hello! I am your **EcoTracker AI Carbon Coach**, powered by Google Gemini. Ask me anything about tracking your emissions, strategic micro-habits, or details on carbon offset options! How can I guide you today?" }
+    {
+      role: 'model',
+      text: 'Hello! I am your **EcoTracker AI Carbon Coach**, powered by Google Gemini. Ask me anything about tracking your emissions, strategic micro-habits, or details on carbon offset options! How can I guide you today?',
+    },
   ]);
-  const [inputVal, setInputVal] = useState("");
+  const [inputVal, setInputVal] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Suggestions for prompt triggers
   const promptSuggestions = [
-    "What are 3 quick daily ways to reduce electricity?",
-    "How can I cut down on my food emissions?",
-    "Is recycling waste better than avoiding plastic?",
-    "Explain standard carbon offset calculations?"
+    'What are 3 quick daily ways to reduce electricity?',
+    'How can I cut down on my food emissions?',
+    'Is recycling waste better than avoiding plastic?',
+    'Explain standard carbon offset calculations?',
   ];
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
   const sendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || loading) return;
 
-    const userMsg: ChatMessage = { role: "user", text: textToSend };
-    setMessages(prev => [...prev, userMsg]);
-    setInputVal("");
+    const userMsg: ChatMessage = { role: 'user', text: textToSend };
+    setMessages((prev) => [...prev, userMsg]);
+    setInputVal('');
     setLoading(true);
 
     try {
-      const response = await axios.post("/api/carbon/coach", {
+      const response = await axios.post('/api/carbon/coach', {
         userId,
         message: textToSend,
-        chatHistory: messages
+        chatHistory: messages,
       });
 
       if (response.data && response.data.reply) {
-        setMessages(prev => [...prev, { role: "model", text: response.data.reply }]);
+        setMessages((prev) => [...prev, { role: 'model', text: response.data.reply }]);
       } else {
-        setMessages(prev => [...prev, { role: "model", text: "I analyzed your request but had a slight connection hitch. Let's try again!" }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'model',
+            text: "I analyzed your request but had a slight connection hitch. Let's try again!",
+          },
+        ]);
       }
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: "model", text: "Sorry, I am facing connectivity issues to my Gemini core right now. Please try again soon." }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'model',
+          text: 'Sorry, I am facing connectivity issues to my Gemini core right now. Please try again soon.',
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -64,27 +79,30 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
 
   const handleClearConfirm = () => {
     setMessages([
-      { role: "model", text: "History cleared. I am your EcoTracker Coach! What green projects should we explore next?" }
+      {
+        role: 'model',
+        text: 'History cleared. I am your EcoTracker Coach! What green projects should we explore next?',
+      },
     ]);
     setShowClearConfirm(false);
   };
 
   // Basic lightweight markdown renderer for simple bold formatting & lists
   const renderMessageText = (txt: string) => {
-    const lines = txt.split("\n");
+    const lines = txt.split('\n');
     return lines.map((line, idx) => {
       // Handle simple markdown line prefixes
       let parsedLine = line;
       let isBullet = false;
       let isHeading = false;
 
-      if (line.startsWith("- ") || line.startsWith("* ")) {
+      if (line.startsWith('- ') || line.startsWith('* ')) {
         parsedLine = line.substring(2);
         isBullet = true;
-      } else if (line.startsWith("### ")) {
+      } else if (line.startsWith('### ')) {
         parsedLine = line.substring(4);
         isHeading = true;
-      } else if (line.startsWith("## ")) {
+      } else if (line.startsWith('## ')) {
         parsedLine = line.substring(3);
         isHeading = true;
       }
@@ -99,7 +117,11 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
         if (match.index > lastIndex) {
           parts.push(parsedLine.substring(lastIndex, match.index));
         }
-        parts.push(<strong key={match.index} className="text-emerald-700 font-semibold">{match[1]}</strong>);
+        parts.push(
+          <strong key={match.index} className="text-emerald-700 font-semibold">
+            {match[1]}
+          </strong>
+        );
         lastIndex = boldRegex.lastIndex;
       }
       if (lastIndex < parsedLine.length) {
@@ -109,11 +131,18 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
       const content = parts.length > 0 ? parts : parsedLine;
 
       if (isHeading) {
-        return <h4 key={idx} className="text-emerald-700 font-bold text-sm mt-3 mb-1.5">{content}</h4>;
+        return (
+          <h4 key={idx} className="text-emerald-700 font-bold text-sm mt-3 mb-1.5">
+            {content}
+          </h4>
+        );
       }
       if (isBullet) {
         return (
-          <li key={idx} className="ml-4 list-disc text-slate-600 text-[11.5px] leading-relaxed my-1">
+          <li
+            key={idx}
+            className="ml-4 list-disc text-slate-600 text-[11.5px] leading-relaxed my-1"
+          >
             {content}
           </li>
         );
@@ -127,7 +156,10 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
   };
 
   return (
-    <div id="ai-coach-panel" className="bg-white border border-slate-200 rounded-3xl p-6 h-[calc(100vh-140px)] flex flex-col justify-between overflow-hidden relative shadow-xs">
+    <div
+      id="ai-coach-panel"
+      className="bg-white border border-slate-200 rounded-3xl p-6 h-[calc(100vh-140px)] flex flex-col justify-between overflow-hidden relative shadow-xs"
+    >
       {/* Upper header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-4 shrink-0">
         <div className="flex items-center gap-2.5">
@@ -136,12 +168,15 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              AI Carbon Coach <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse shrink-0" />
+              AI Carbon Coach{' '}
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse shrink-0" />
             </h3>
-            <p className="text-[10px] text-slate-500">Ask strategic questions powered by Google Gemini</p>
+            <p className="text-[10px] text-slate-500">
+              Ask strategic questions powered by Google Gemini
+            </p>
           </div>
         </div>
-        <button 
+        <button
           onClick={() => setShowClearConfirm(true)}
           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
           title="Clear logs history"
@@ -153,22 +188,24 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
       {/* Messages track */}
       <div className="grow overflow-y-auto py-4 space-y-4 pr-1 my-2">
         {messages.map((m, idx) => {
-          const isUser = m.role === "user";
+          const isUser = m.role === 'user';
           return (
-            <div 
-              key={idx} 
-              className={`flex ${isUser ? "justify-end" : "justify-start"} items-start gap-2.5 transition-all animate-fadeIn`}
+            <div
+              key={idx}
+              className={`flex ${isUser ? 'justify-end' : 'justify-start'} items-start gap-2.5 transition-all animate-fadeIn`}
             >
               {!isUser && (
                 <div className="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
                   <Leaf className="w-3.5 h-3.5 text-emerald-600" />
                 </div>
               )}
-              <div className={`p-4 rounded-2xl max-w-[80%] ${
-                isUser 
-                  ? "bg-emerald-600 text-white rounded-tr-none border border-emerald-700/10 shadow-xs" 
-                  : "bg-slate-50 text-slate-700 rounded-tl-none border border-slate-200 shadow-xs"
-              }`}>
+              <div
+                className={`p-4 rounded-2xl max-w-[80%] ${
+                  isUser
+                    ? 'bg-emerald-600 text-white rounded-tr-none border border-emerald-700/10 shadow-xs'
+                    : 'bg-slate-50 text-slate-700 rounded-tl-none border border-slate-200 shadow-xs'
+                }`}
+              >
                 {renderMessageText(m.text)}
               </div>
             </div>
@@ -181,9 +218,18 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
               <Leaf className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
             </div>
             <div className="bg-slate-50 text-slate-500 px-4 py-3 rounded-2xl rounded-tl-none border border-slate-200 text-xs flex items-center gap-2 shadow-xs">
-              <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              <span
+                className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce"
+                style={{ animationDelay: '0ms' }}
+              />
+              <span
+                className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce"
+                style={{ animationDelay: '150ms' }}
+              />
+              <span
+                className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce"
+                style={{ animationDelay: '300ms' }}
+              />
               <span>Analyzing carbon variables...</span>
             </div>
           </div>
@@ -210,8 +256,11 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
         )}
 
         {/* Form Input fields */}
-        <form 
-          onSubmit={(e) => { e.preventDefault(); sendMessage(inputVal); }}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage(inputVal);
+          }}
           className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl overflow-hidden"
         >
           <input
@@ -249,7 +298,7 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
               className="relative bg-white border border-slate-200 rounded-3xl max-w-[90%] w-full p-5 shadow-xl flex flex-col gap-3.5 z-10"
             >
               <div className="flex items-start justify-between">
@@ -268,7 +317,8 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
               </div>
 
               <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
-                Are you sure you want to clear your current conversation history with the EcoTracker Carbon Coach? This action cannot be undone.
+                Are you sure you want to clear your current conversation history with the EcoTracker
+                Carbon Coach? This action cannot be undone.
               </p>
 
               <div className="flex items-center gap-2.5 justify-end mt-1">
@@ -289,7 +339,6 @@ export default function CarbonCoach({ userId }: CarbonCoachProps) {
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

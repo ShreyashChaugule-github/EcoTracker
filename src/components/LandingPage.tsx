@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Leaf, Sparkles, ArrowRight, X, Mail, User, Info, CheckCircle2, ShieldCheck } from "lucide-react";
-import { signInWithRedirect, getRedirectResult } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Leaf,
+  Sparkles,
+  ArrowRight,
+  X,
+  Mail,
+  User,
+  Info,
+  CheckCircle2,
+  ShieldCheck,
+} from 'lucide-react';
+import { signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 
 interface LandingPageProps {
   onLoginSuccess: (email: string, displayName: string) => void;
@@ -10,10 +20,10 @@ interface LandingPageProps {
 
 export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [errorInput, setErrorInput] = useState("");
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [errorInput, setErrorInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Check for Google Auth redirect result on mount
@@ -23,17 +33,17 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
         const result = await getRedirectResult(auth);
         if (result && result.user) {
           const user = result.user;
-          const userEmail = user.email || "google.warrior@example.com";
-          const userDisplayName = user.displayName || userEmail.split("@")[0] || "Eco-Warrior";
+          const userEmail = user.email || 'google.warrior@example.com';
+          const userDisplayName = user.displayName || userEmail.split('@')[0] || 'Eco-Warrior';
           onLoginSuccess(userEmail, userDisplayName);
         }
       } catch (e: any) {
-        console.error("Google Redirect Auth failed:", e);
-        let errMsg = "Google Auth failed. ";
-        if (e.code === "auth/unauthorized-domain") {
-           errMsg += "This domain is not authorized in the Firebase Console.";
+        console.error('Google Redirect Auth failed:', e);
+        let errMsg = 'Google Auth failed. ';
+        if (e.code === 'auth/unauthorized-domain') {
+          errMsg += 'This domain is not authorized in the Firebase Console.';
         } else {
-           errMsg += e.message || "Unknown error occurred.";
+          errMsg += e.message || 'Unknown error occurred.';
         }
         setErrorInput(errMsg);
         setShowAuthModal(true);
@@ -45,15 +55,15 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
   // Helper to sanitize/generate deterministic userId from email
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorInput("");
+    setErrorInput('');
 
     if (!email) {
-      setErrorInput("Please enter a valid email address.");
+      setErrorInput('Please enter a valid email address.');
       return;
     }
 
-    if (authMode === "signup" && !name) {
-      setErrorInput("Please enter your display name.");
+    if (authMode === 'signup' && !name) {
+      setErrorInput('Please enter your display name.');
       return;
     }
 
@@ -61,41 +71,49 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
     setTimeout(() => {
       setLoading(false);
       // Determine display name
-      const finalName = name || email.split("@")[0].split(".")[0];
+      const finalName = name || email.split('@')[0].split('.')[0];
       onLoginSuccess(email.trim(), finalName.trim());
     }, 850);
   };
 
   const handleGoogleSubmit = async () => {
     setLoading(true);
-    setErrorInput("");
+    setErrorInput('');
     try {
       // Check if we are running in an iframe
       const isInIframe = window.self !== window.top;
       if (isInIframe) {
-        console.warn("Detected iframe environment. Google Sign-In redirects may be blocked if cross-origin rules apply. Open in New Tab if issues occur.");
+        console.warn(
+          'Detected iframe environment. Google Sign-In redirects may be blocked if cross-origin rules apply. Open in New Tab if issues occur.'
+        );
       }
 
       // Use redirect instead of popup to fix Safari blocking issues
       await signInWithRedirect(auth, googleProvider);
       // Note: No code executes after this point because the page redirects to Google.
     } catch (e: any) {
-      console.error("Google Auth failed:", e);
-      let errMsg = "";
-      
-      if (e.code === "auth/unauthorized-domain" || (e.message && e.message.includes("auth/unauthorized-domain"))) {
+      console.error('Google Auth failed:', e);
+      let errMsg = '';
+
+      if (
+        e.code === 'auth/unauthorized-domain' ||
+        (e.message && e.message.includes('auth/unauthorized-domain'))
+      ) {
         const hostname = window.location.hostname;
         errMsg = `Firebase Error: unauthorized-domain\n\nTo allow Google Authentication, this host must be authorized in your Firebase Project:\n\n1. Go to Firebase Console > Authentication > Settings > Authorized domains.\n2. Click 'Add domain'.\n3. Add the following hostnames to the list:\n   • ${hostname}\n   • localhost\n\nOnce added, try to sign in again!`;
-      } else if (e.code === "auth/popup-blocked" || e.code === "auth/cancelled-popup-request") {
-        errMsg = "Google Auth failed. The sign-in popup was blocked by your browser. Please allow popups or click the 'Open in New Tab' button in the top right of the preview window.";
-      } else if (e.code === "auth/operation-not-allowed") {
-        errMsg = "Google Auth failed. Google Sign-In is not enabled yet in your Firebase Console. Please make sure Google is enabled as a Sign-In Provider in Firebase Auth.";
+      } else if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
+        errMsg =
+          "Google Auth failed. The sign-in popup was blocked by your browser. Please allow popups or click the 'Open in New Tab' button in the top right of the preview window.";
+      } else if (e.code === 'auth/operation-not-allowed') {
+        errMsg =
+          'Google Auth failed. Google Sign-In is not enabled yet in your Firebase Console. Please make sure Google is enabled as a Sign-In Provider in Firebase Auth.';
       } else if (window.self !== window.top) {
-        errMsg = "Google Auth failed. Since the application is running inside a secure preview iframe, browser policies block authentication popups. Please click 'Open in New Tab' at the top-right of your preview screen to log in safely via Google!";
+        errMsg =
+          "Google Auth failed. Since the application is running inside a secure preview iframe, browser policies block authentication popups. Please click 'Open in New Tab' at the top-right of your preview screen to log in safely via Google!";
       } else {
-        errMsg = `Google Auth failed: ${e.message || "Please make sure your Firebase configuration allows Google Authentication."}`;
+        errMsg = `Google Auth failed: ${e.message || 'Please make sure your Firebase configuration allows Google Authentication.'}`;
       }
-      
+
       setErrorInput(errMsg);
       setShowAuthModal(true); // Open the modal automatically to display the instructions
     } finally {
@@ -104,58 +122,57 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
   };
 
   const handleTryDemo = () => {
-    onLoginSuccess("demo.warrior@example.com", "Alex Eco-Warrior");
+    onLoginSuccess('demo.warrior@example.com', 'Alex Eco-Warrior');
   };
 
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col justify-between relative overflow-hidden font-sans">
-      
       {/* Background Decorative Rings/Glow meshes */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-100/30 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-100/20 rounded-full blur-[140px] pointer-events-none" />
 
       {/* Floating Graphic Widgets (Eco-Themed glassmorphism cards like the attached layout) */}
-      
+
       {/* Widget A: Left-middle (Tree block) */}
-      <motion.div 
+      <motion.div
         animate={{ y: [0, -12, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute left-[6%] top-[24%] z-10 hidden md:flex items-center justify-center p-3.5 bg-white border border-slate-100 rounded-3xl shadow-[0_15px_30px_-5px_rgba(34,197,94,0.12)] bg-white/80 backdrop-blur-lg w-16 h-16 border-green-250/20"
       >
         <span className="text-3xl filter drop-shadow">🌲</span>
       </motion.div>
 
       {/* Widget B: Right-middle (Leaf block) */}
-      <motion.div 
+      <motion.div
         animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
         className="absolute right-[8%] top-[34%] z-10 hidden md:flex items-center justify-center p-3.5 bg-white border border-slate-100 rounded-3xl shadow-[0_15px_30px_-5px_rgba(59,130,246,0.12)] bg-white/80 backdrop-blur-lg w-16 h-16 border-blue-250/20"
       >
         <span className="text-3xl filter drop-shadow">🍃</span>
       </motion.div>
 
       {/* Widget C: Mid-bottom-left (Analytics Graph symbol) */}
-      <motion.div 
+      <motion.div
         animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
         className="absolute left-[12%] bottom-[22%] z-10 hidden md:flex items-center justify-center p-3.5 bg-white border border-slate-100 rounded-3xl shadow-[0_15px_30px_-5px_rgba(245,158,11,0.12)] bg-white/80 backdrop-blur-lg w-16 h-16 border-amber-250/20"
       >
         <span className="text-3xl filter drop-shadow">📊</span>
       </motion.div>
 
       {/* Widget D: Mid-bottom-right (Users icon group symbol) */}
-      <motion.div 
+      <motion.div
         animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 5.8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+        transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
         className="absolute right-[12%] bottom-[12%] z-10 hidden md:flex items-center justify-center p-3.5 bg-white border border-slate-100 rounded-3xl shadow-[0_15px_30px_-5px_rgba(168,85,247,0.12)] bg-white/80 backdrop-blur-lg w-16 h-16 border-purple-250/20"
       >
         <span className="text-3xl filter drop-shadow">👥</span>
       </motion.div>
 
       {/* Widget E: Center-right (Earth / Globe symbol) */}
-      <motion.div 
+      <motion.div
         animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         className="absolute right-[22%] top-[48%] z-10 hidden md:flex items-center justify-center p-3 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_25px_-5px_rgba(16,185,129,0.1)] bg-white/80 backdrop-blur-lg w-14 h-14 border-emerald-250/20"
       >
         <span className="text-2xl filter drop-shadow">🌍</span>
@@ -167,12 +184,14 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
           <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
             <Leaf className="w-5 h-5 fill-white/10" />
           </div>
-          <span className="font-sans font-extrabold text-slate-900 tracking-tight text-lg">EcoTracker</span>
+          <span className="font-sans font-extrabold text-slate-900 tracking-tight text-lg">
+            EcoTracker
+          </span>
         </div>
 
-        <button 
+        <button
           onClick={() => {
-            setAuthMode("login");
+            setAuthMode('login');
             setShowAuthModal(true);
           }}
           className="font-sans font-semibold text-slate-800 text-xs px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-xs cursor-pointer focus:outline-none"
@@ -183,48 +202,52 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
 
       {/* Hero Center Block */}
       <main className="flex-1 flex flex-col items-center justify-center text-center px-6 relative z-10 py-10">
-        
         {/* Gemini Badge */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="bg-emerald-50 border border-emerald-200/50 rounded-full px-4 py-1.5 flex items-center gap-1.5 mb-7 shadow-xs w-fit select-none"
         >
           <span className="text-[12px]">🍃</span>
-          <span className="text-[11px] font-sans font-bold text-emerald-800 tracking-wide uppercase">Built with Gemini AI & Verified Carbon Data</span>
+          <span className="text-[11px] font-sans font-bold text-emerald-800 tracking-wide uppercase">
+            Built with Gemini AI & Verified Carbon Data
+          </span>
         </motion.div>
 
         {/* Big Bold Headline */}
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tighter leading-[1.05] max-w-3xl mb-6 select-none"
         >
-          Your Intelligent Guide to <span className="text-emerald-700 font-extrabold relative inline-block">Net-Zero Living</span>
+          Your Intelligent Guide to{' '}
+          <span className="text-emerald-700 font-extrabold relative inline-block">
+            Net-Zero Living
+          </span>
         </motion.h1>
 
         {/* Description Subtitle */}
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-slate-500 font-sans font-medium text-sm sm:text-base max-w-xl leading-relaxed mb-10 select-none"
         >
-          Powered by Gemini AI and science-backed environmental guidelines. 
-          Audit your consumption habits, optimize transit paths, log green milestones, and offset emissions instantly.
+          Powered by Gemini AI and science-backed environmental guidelines. Audit your consumption
+          habits, optimize transit paths, log green milestones, and offset emissions instantly.
         </motion.p>
 
         {/* Buttons Action Group */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center max-w-md px-4"
         >
           {/* Continue with Google Mock Action Button */}
-          <button 
+          <button
             onClick={handleGoogleSubmit}
             className="w-full sm:w-auto bg-[#1a2e5a] hover:bg-[#122144] text-white text-xs sm:text-[13px] font-bold px-7 py-3.5 rounded-full shadow-md shadow-[#1a2e5a]/10 hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer border-none"
           >
@@ -239,9 +262,9 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
           </button>
 
           {/* Get Started Free Email Trigger Button */}
-          <button 
+          <button
             onClick={() => {
-              setAuthMode("signup");
+              setAuthMode('signup');
               setShowAuthModal(true);
             }}
             className="w-full sm:w-auto bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-[13px] font-bold px-7 py-3.5 rounded-full shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
@@ -251,19 +274,26 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
         </motion.div>
 
         {/* Subtle sub text caption */}
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
           className="text-[11px] text-slate-400 font-sans tracking-wide mt-4 select-none"
         >
-          Free for all citizens. No credit cards or billing required. Or, check out as a <button onClick={handleTryDemo} className="text-emerald-600 hover:text-emerald-500 font-bold underline cursor-pointer bg-transparent border-none p-0 focus:outline-none">Guest Explorer</button>.
+          Free for all citizens. No credit cards or billing required. Or, check out as a{' '}
+          <button
+            onClick={handleTryDemo}
+            className="text-emerald-600 hover:text-emerald-500 font-bold underline cursor-pointer bg-transparent border-none p-0 focus:outline-none"
+          >
+            Guest Explorer
+          </button>
+          .
         </motion.p>
       </main>
 
       {/* Bottom Large Horizontal Stats Card Grid Layout */}
       <footer className="w-full max-w-5xl mx-auto px-6 pb-12 shrink-0 relative z-20">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4 }}
@@ -271,26 +301,38 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
         >
           {/* Stat 1 */}
           <div className="text-center md:border-r border-slate-100 last:border-0 py-2">
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">4.8 Tons</h3>
-            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">Average CO2 / Capita</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              4.8 Tons
+            </h3>
+            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">
+              Average CO2 / Capita
+            </p>
           </div>
 
           {/* Stat 2 */}
           <div className="text-center md:border-r border-slate-100 last:border-0 py-2">
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">150+</h3>
-            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">Verified Eco-Actions</p>
+            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">
+              Verified Eco-Actions
+            </p>
           </div>
 
           {/* Stat 3 */}
           <div className="text-center md:border-r border-slate-100 last:border-0 py-2">
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">2030</h3>
-            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">Net-Zero Time Horizon</p>
+            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">
+              Net-Zero Time Horizon
+            </p>
           </div>
 
           {/* Stat 4 */}
           <div className="text-center last:border-0 py-2">
-            <h3 className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">100%</h3>
-            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">Free & Science-Backed</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">
+              100%
+            </h3>
+            <p className="text-[10px] font-bold font-sans text-slate-400 tracking-wider uppercase mt-1">
+              Free & Science-Backed
+            </p>
           </div>
         </motion.div>
       </footer>
@@ -299,9 +341,8 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
       <AnimatePresence>
         {showAuthModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            
             {/* Dark glass backdrop element */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -310,25 +351,26 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
             />
 
             {/* Modal Body card */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
               className="relative bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm w-full z-10 flex flex-col gap-6"
             >
-              
               {/* Header inside Modal */}
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">
-                    {authMode === "login" ? "Welcome Back" : "Create Account"}
+                    {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    {authMode === "login" ? "Enter details to resume tracker logs" : "Start saving carbon points today"}
+                    {authMode === 'login'
+                      ? 'Enter details to resume tracker logs'
+                      : 'Start saving carbon points today'}
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowAuthModal(false)}
                   className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all p-1.5 rounded-xl cursor-pointer"
                 >
@@ -338,22 +380,21 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
 
               {/* Form elements */}
               <form onSubmit={handleAuthSubmit} className="space-y-4 font-sans">
-                
                 {/* Input Name field - inside Sign-up Mode only */}
-                {authMode === "signup" && (
+                {authMode === 'signup' && (
                   <div>
                     <label className="block text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-widest pl-1 mb-1">
                       Display Name
                     </label>
                     <div className="relative flex items-center">
                       <User className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input 
+                      <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Alex Eco-Warrior"
                         className="w-full bg-slate-50 border border-slate-150 pl-10 pr-4 py-3 rounded-2xl text-xs outline-none focus:border-emerald-500 focus:bg-white text-slate-950 transition-all"
-                        required={authMode === "signup"}
+                        required={authMode === 'signup'}
                       />
                     </div>
                   </div>
@@ -366,7 +407,7 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
                   </label>
                   <div className="relative flex items-center">
                     <Mail className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                    <input 
+                    <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -385,7 +426,7 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
                 )}
 
                 {/* Action Submit button */}
-                <button 
+                <button
                   type="submit"
                   disabled={loading}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-300 text-white font-bold text-xs py-3.5 rounded-2xl shadow-md shadow-emerald-600/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none"
@@ -394,7 +435,7 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
                     <span>Verifying authentication...</span>
                   ) : (
                     <>
-                      <span>{authMode === "login" ? "Sign In" : "Initialize Account"}</span>
+                      <span>{authMode === 'login' ? 'Sign In' : 'Initialize Account'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
@@ -403,12 +444,14 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
                 {/* Divider */}
                 <div className="relative flex py-1.5 items-center">
                   <div className="flex-grow border-t border-slate-100"></div>
-                  <span className="flex-shrink mx-3 text-[9px] font-mono text-slate-400 uppercase tracking-widest">or</span>
+                  <span className="flex-shrink mx-3 text-[9px] font-mono text-slate-400 uppercase tracking-widest">
+                    or
+                  </span>
                   <div className="flex-grow border-t border-slate-100"></div>
                 </div>
 
                 {/* Google Sign In option inside modal */}
-                <button 
+                <button
                   type="button"
                   onClick={handleGoogleSubmit}
                   disabled={loading}
@@ -427,23 +470,23 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
               {/* Toggle switch between login / signup modes */}
               <div className="text-center border-t border-slate-100 pt-4 flex flex-col gap-2">
                 <p className="text-[11.5px] text-slate-500">
-                  {authMode === "login" ? "New to EcoTracker? " : "Already have an account? "}
-                  <button 
+                  {authMode === 'login' ? 'New to EcoTracker? ' : 'Already have an account? '}
+                  <button
                     type="button"
                     onClick={() => {
-                      setErrorInput("");
-                      setAuthMode(authMode === "login" ? "signup" : "login");
+                      setErrorInput('');
+                      setAuthMode(authMode === 'login' ? 'signup' : 'login');
                     }}
                     className="text-emerald-600 hover:text-emerald-500 hover:underline font-extrabold focus:outline-none cursor-pointer bg-transparent border-none p-0 inline-block"
                   >
-                    {authMode === "login" ? "Register Free" : "Log In"}
+                    {authMode === 'login' ? 'Register Free' : 'Log In'}
                   </button>
                 </p>
 
                 {/* Quick Demo Access Trigger */}
                 <div className="mt-1 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 bg-slate-50 border border-slate-150 p-2.5 rounded-xl">
                   <span>Want to seed fake values?</span>
-                  <button 
+                  <button
                     onClick={handleTryDemo}
                     className="text-emerald-700 hover:text-emerald-600 font-bold hover:underline focus:outline-none cursor-pointer bg-transparent border-none p-0 inline-block"
                   >
@@ -451,12 +494,10 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
                   </button>
                 </div>
               </div>
-
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

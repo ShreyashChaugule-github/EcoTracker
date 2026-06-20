@@ -13,14 +13,14 @@ import { defineConfig } from 'vite';
 function resolveFirebaseConfig(): Record<string, string> {
   if (process.env.VITE_FIREBASE_API_KEY) {
     return {
-      apiKey:              process.env.VITE_FIREBASE_API_KEY!,
-      authDomain:          process.env.VITE_FIREBASE_AUTH_DOMAIN          || '',
-      projectId:           process.env.VITE_FIREBASE_PROJECT_ID           || '',
-      storageBucket:       process.env.VITE_FIREBASE_STORAGE_BUCKET       || '',
-      messagingSenderId:   process.env.VITE_FIREBASE_MESSAGING_SENDER_ID  || '',
-      appId:               process.env.VITE_FIREBASE_APP_ID               || '',
-      measurementId:       process.env.VITE_FIREBASE_MEASUREMENT_ID       || '',
-      firestoreDatabaseId: process.env.VITE_FIRESTORE_DATABASE_ID         || '(default)',
+      apiKey: process.env.VITE_FIREBASE_API_KEY!,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || '',
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+      appId: process.env.VITE_FIREBASE_APP_ID || '',
+      measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+      firestoreDatabaseId: process.env.VITE_FIRESTORE_DATABASE_ID || '(default)',
     };
   }
   // Local development fallback
@@ -30,7 +30,7 @@ function resolveFirebaseConfig(): Record<string, string> {
   }
   console.warn(
     '[vite.config] WARNING: No Firebase config found. ' +
-    'Set VITE_FIREBASE_API_KEY env vars or provide firebase-applet-config.json.'
+      'Set VITE_FIREBASE_API_KEY env vars or provide firebase-applet-config.json.'
   );
   return {};
 }
@@ -55,14 +55,18 @@ export default defineConfig(() => {
     // Inject Firebase config as compile-time constants into the client bundle.
     // import.meta.env.VITE_FB_* will be replaced with the resolved string values.
     define: {
-      'import.meta.env.VITE_FIREBASE_API_KEY':              JSON.stringify(fbConfig.apiKey            || ''),
-      'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN':          JSON.stringify(fbConfig.authDomain        || ''),
-      'import.meta.env.VITE_FIREBASE_PROJECT_ID':           JSON.stringify(fbConfig.projectId         || ''),
-      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET':       JSON.stringify(fbConfig.storageBucket     || ''),
-      'import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID':  JSON.stringify(fbConfig.messagingSenderId || ''),
-      'import.meta.env.VITE_FIREBASE_APP_ID':               JSON.stringify(fbConfig.appId             || ''),
-      'import.meta.env.VITE_FIREBASE_MEASUREMENT_ID':       JSON.stringify(fbConfig.measurementId     || ''),
-      'import.meta.env.VITE_FIRESTORE_DATABASE_ID':         JSON.stringify(fbConfig.firestoreDatabaseId || '(default)'),
+      'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(fbConfig.apiKey || ''),
+      'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN': JSON.stringify(fbConfig.authDomain || ''),
+      'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify(fbConfig.projectId || ''),
+      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify(fbConfig.storageBucket || ''),
+      'import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(
+        fbConfig.messagingSenderId || ''
+      ),
+      'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify(fbConfig.appId || ''),
+      'import.meta.env.VITE_FIREBASE_MEASUREMENT_ID': JSON.stringify(fbConfig.measurementId || ''),
+      'import.meta.env.VITE_FIRESTORE_DATABASE_ID': JSON.stringify(
+        fbConfig.firestoreDatabaseId || '(default)'
+      ),
     },
   };
 });
