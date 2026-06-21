@@ -1,7 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
 const base = 'http://localhost:8080';
-let serverProcess: any = null;
 
 async function waitForHealth(url: string, timeout = 5000) {
   const start = Date.now();
@@ -71,7 +70,12 @@ describe('Server endpoints', () => {
     const postRes = await fetch(`${base}/api/carbon/logs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: uid, date: new Date().toISOString().substring(0, 10), category: 'transportation', amount: 15 }),
+      body: JSON.stringify({
+        userId: uid,
+        date: new Date().toISOString().substring(0, 10),
+        category: 'transportation',
+        amount: 15,
+      }),
     });
     expect(postRes.status).toBe(201);
     const log = await postRes.json();
@@ -96,7 +100,11 @@ describe('Server endpoints', () => {
     const res = await fetch(`${base}/api/carbon/coach`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: 'eco-warrior-kishan', message: 'How to reduce emissions?', chatHistory: [] }),
+      body: JSON.stringify({
+        userId: 'eco-warrior-kishan',
+        message: 'How to reduce emissions?',
+        chatHistory: [],
+      }),
     });
     expect(res.status).toBe(200);
     const j = await res.json();
@@ -114,5 +122,50 @@ describe('Server endpoints', () => {
     const j = await res.json();
     expect(j).toHaveProperty('report');
     expect(typeof j.report).toBe('string');
+  });
+
+  it('PUT /api/profile/:userId updates user profile', async () => {
+    const uid = `test-user-${Date.now()}`;
+    const p = await fetch(`${base}/api/profile/${uid}`);
+    expect(p.status).toBe(200);
+
+    const putRes = await fetch(`${base}/api/profile/${uid}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        displayName: 'Updated Name',
+        level: 5,
+        totalXp: 500,
+        currentStreak: 10,
+        totalCo2Saved: 100,
+      }),
+    });
+    expect(putRes.status).toBe(200);
+    const j = await putRes.json();
+    expect(j.displayName).toBe('Updated Name');
+    expect(j.level).toBe(5);
+  });
+
+  it('DELETE /api/carbon/logs/:logId deletes a log', async () => {
+    const uid = `test-user-${Date.now()}`;
+    const postRes = await fetch(`${base}/api/carbon/logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: uid,
+        date: new Date().toISOString().substring(0, 10),
+        category: 'waste',
+        amount: 5,
+      }),
+    });
+    const log = await postRes.json();
+    expect(log.id).toBeDefined();
+
+    const delRes = await fetch(`${base}/api/carbon/logs/${log.id}`, {
+      method: 'DELETE',
+    });
+    expect(delRes.status).toBe(200);
+    const j = await delRes.json();
+    expect(j.success).toBe(true);
   });
 });

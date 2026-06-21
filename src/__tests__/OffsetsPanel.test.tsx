@@ -8,7 +8,14 @@ vi.mock('axios');
 describe('OffsetsPanel', () => {
   it('loads projects and submits an offset funding', async () => {
     (axios.get as any).mockResolvedValue({ data: [] });
-    (axios.post as any).mockResolvedValue({ data: { id: 'o1', projectName: 'Amazon Reforestation Initiative', amountPaid: 25, co2Offset: 1666.7 } });
+    (axios.post as any).mockResolvedValue({
+      data: {
+        id: 'o1',
+        projectName: 'Amazon Reforestation Initiative',
+        amountPaid: 25,
+        co2Offset: 1666.7,
+      },
+    });
 
     const onOffsetFunded = vi.fn();
     render(<OffsetsPanel userId="u1" onOffsetFunded={onOffsetFunded} />);

@@ -22,6 +22,9 @@ import {
   where,
   orderBy,
   limit,
+  DocumentReference,
+  Query,
+  DocumentData,
 } from 'firebase/firestore';
 import { GoogleGenAI } from '@google/genai';
 import AdmZip from 'adm-zip';
@@ -70,15 +73,23 @@ const db =
 let useLocalFallback = false;
 const LOCAL_DB_PATH = path.join(process.cwd(), 'local_database.json');
 
-function loadLocalDB() {
+interface LocalDatabase {
+  users: Record<string, any>;
+  carbon_logs: Record<string, any>;
+  eco_actions: Record<string, any>;
+  offsets: Record<string, any>;
+  [collectionName: string]: Record<string, any>;
+}
+
+function loadLocalDB(): LocalDatabase {
   if (fs.existsSync(LOCAL_DB_PATH)) {
     try {
-      return JSON.parse(fs.readFileSync(LOCAL_DB_PATH, 'utf-8'));
+      return JSON.parse(fs.readFileSync(LOCAL_DB_PATH, 'utf-8')) as LocalDatabase;
     } catch (e) {
       console.error('Error reading local DB:', e);
     }
   }
-  const initial = {
+  const initial: LocalDatabase = {
     users: {
       'eco-warrior-kishan': {
         id: 'eco-warrior-kishan',
@@ -100,7 +111,7 @@ function loadLocalDB() {
   return initial;
 }
 
-function saveLocalDB(data: any) {
+function saveLocalDB(data: LocalDatabase) {
   try {
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
   } catch (e) {
@@ -109,11 +120,15 @@ function saveLocalDB(data: any) {
 }
 
 // Custom DB Wrapper APIs
-async function getDocWrapper(collectionName: string, docId: string, docRef: any) {
+async function getDocWrapper(
+  collectionName: string,
+  docId: string,
+  docRef: DocumentReference<DocumentData>
+) {
   if (useLocalFallback) {
     const data = loadLocalDB();
-    const collection = data[collectionName as keyof typeof data] || {};
-    const record = (collection as any)[docId];
+    const collection = data[collectionName] || {};
+    const record = collection[docId];
     return {
       exists: () => !!record,
       data: () => record,
@@ -129,8 +144,8 @@ async function getDocWrapper(collectionName: string, docId: string, docRef: any)
       );
       // Fallback silently
       const data = loadLocalDB();
-      const collection = data[collectionName as keyof typeof data] || {};
-      const record = (collection as any)[docId];
+      const collection = data[collectionName] || {};
+      const record = collection[docId];
       return {
         exists: () => !!record,
         data: () => record,
@@ -139,13 +154,18 @@ async function getDocWrapper(collectionName: string, docId: string, docRef: any)
   }
 }
 
-async function setDocWrapper(collectionName: string, docId: string, docRef: any, payload: any) {
+async function setDocWrapper(
+  collectionName: string,
+  docId: string,
+  docRef: DocumentReference<DocumentData>,
+  payload: DocumentData
+) {
   if (useLocalFallback) {
     const data = loadLocalDB();
-    if (!data[collectionName as keyof typeof data]) {
-      (data as any)[collectionName] = {};
+    if (!data[collectionName]) {
+      data[collectionName] = {};
     }
-    (data as any)[collectionName][docId] = payload;
+    data[collectionName][docId] = payload;
     saveLocalDB(data);
   } else {
     try {
@@ -156,21 +176,26 @@ async function setDocWrapper(collectionName: string, docId: string, docRef: any,
         err instanceof Error ? err.message : String(err)
       );
       const data = loadLocalDB();
-      if (!data[collectionName as keyof typeof data]) {
-        (data as any)[collectionName] = {};
+      if (!data[collectionName]) {
+        data[collectionName] = {};
       }
-      (data as any)[collectionName][docId] = payload;
+      data[collectionName][docId] = payload;
       saveLocalDB(data);
     }
   }
 }
 
-async function updateDocWrapper(collectionName: string, docId: string, docRef: any, payload: any) {
+async function updateDocWrapper(
+  collectionName: string,
+  docId: string,
+  docRef: DocumentReference<DocumentData>,
+  payload: DocumentData
+) {
   if (useLocalFallback) {
     const data = loadLocalDB();
-    if (data[collectionName as keyof typeof data] && (data as any)[collectionName][docId]) {
-      (data as any)[collectionName][docId] = {
-        ...(data as any)[collectionName][docId],
+    if (data[collectionName] && data[collectionName][docId]) {
+      data[collectionName][docId] = {
+        ...data[collectionName][docId],
         ...payload,
       };
       saveLocalDB(data);
@@ -184,9 +209,9 @@ async function updateDocWrapper(collectionName: string, docId: string, docRef: a
         err instanceof Error ? err.message : String(err)
       );
       const data = loadLocalDB();
-      if (data[collectionName as keyof typeof data] && (data as any)[collectionName][docId]) {
-        (data as any)[collectionName][docId] = {
-          ...(data as any)[collectionName][docId],
+      if (data[collectionName] && data[collectionName][docId]) {
+        data[collectionName][docId] = {
+          ...data[collectionName][docId],
           ...payload,
         };
         saveLocalDB(data);
@@ -195,11 +220,15 @@ async function updateDocWrapper(collectionName: string, docId: string, docRef: a
   }
 }
 
-async function deleteDocWrapper(collectionName: string, docId: string, docRef: any) {
+async function deleteDocWrapper(
+  collectionName: string,
+  docId: string,
+  docRef: DocumentReference<DocumentData>
+) {
   if (useLocalFallback) {
     const data = loadLocalDB();
-    if (data[collectionName as keyof typeof data] && (data as any)[collectionName][docId]) {
-      delete (data as any)[collectionName][docId];
+    if (data[collectionName] && data[collectionName][docId]) {
+      delete data[collectionName][docId];
       saveLocalDB(data);
     }
   } else {
@@ -211,8 +240,8 @@ async function deleteDocWrapper(collectionName: string, docId: string, docRef: a
         err instanceof Error ? err.message : String(err)
       );
       const data = loadLocalDB();
-      if (data[collectionName as keyof typeof data] && (data as any)[collectionName][docId]) {
-        delete (data as any)[collectionName][docId];
+      if (data[collectionName] && data[collectionName][docId]) {
+        delete data[collectionName][docId];
         saveLocalDB(data);
       }
     }
@@ -221,13 +250,13 @@ async function deleteDocWrapper(collectionName: string, docId: string, docRef: a
 
 async function getDocsWrapper(
   collectionName: string,
-  firestoreQuery: any,
+  firestoreQuery: Query<DocumentData>,
   localFilter: (items: any[]) => any[]
 ) {
   if (useLocalFallback) {
     const data = loadLocalDB();
-    const collection = data[collectionName as keyof typeof data] || {};
-    const list = Object.entries(collection).map(([id, val]) => ({ id, ...(val as any) }));
+    const collection = data[collectionName] || {};
+    const list = Object.entries(collection).map(([id, val]) => ({ id, ...val }));
     const filtered = localFilter(list);
     return {
       docs: filtered.map((item) => ({
@@ -248,8 +277,8 @@ async function getDocsWrapper(
         err instanceof Error ? err.message : String(err)
       );
       const data = loadLocalDB();
-      const collection = data[collectionName as keyof typeof data] || {};
-      const list = Object.entries(collection).map(([id, val]) => ({ id, ...(val as any) }));
+      const collection = data[collectionName] || {};
+      const list = Object.entries(collection).map(([id, val]) => ({ id, ...val }));
       const filtered = localFilter(list);
       return {
         docs: filtered.map((item) => ({

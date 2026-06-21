@@ -37,13 +37,14 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
           const userDisplayName = user.displayName || userEmail.split('@')[0] || 'Eco-Warrior';
           onLoginSuccess(userEmail, userDisplayName);
         }
-      } catch (e: any) {
+      } catch (e) {
         console.error('Google Redirect Auth failed:', e);
         let errMsg = 'Google Auth failed. ';
-        if (e.code === 'auth/unauthorized-domain') {
+        const err = e as { code?: string; message?: string };
+        if (err.code === 'auth/unauthorized-domain') {
           errMsg += 'This domain is not authorized in the Firebase Console.';
         } else {
-          errMsg += e.message || 'Unknown error occurred.';
+          errMsg += err.message || 'Unknown error occurred.';
         }
         setErrorInput(errMsg);
         setShowAuthModal(true);
@@ -91,13 +92,14 @@ export default function LandingPage({ onLoginSuccess }: LandingPageProps) {
       // Use redirect instead of popup to fix Safari blocking issues
       await signInWithRedirect(auth, googleProvider);
       // Note: No code executes after this point because the page redirects to Google.
-    } catch (e: any) {
+    } catch (e) {
       console.error('Google Auth failed:', e);
       let errMsg = '';
+      const err = e as { code?: string; message?: string };
 
       if (
-        e.code === 'auth/unauthorized-domain' ||
-        (e.message && e.message.includes('auth/unauthorized-domain'))
+        err.code === 'auth/unauthorized-domain' ||
+        (err.message && err.message.includes('auth/unauthorized-domain'))
       ) {
         const hostname = window.location.hostname;
         errMsg = `Firebase Error: unauthorized-domain\n\nTo allow Google Authentication, this host must be authorized in your Firebase Project:\n\n1. Go to Firebase Console > Authentication > Settings > Authorized domains.\n2. Click 'Add domain'.\n3. Add the following hostnames to the list:\n   • ${hostname}\n   • localhost\n\nOnce added, try to sign in again!`;

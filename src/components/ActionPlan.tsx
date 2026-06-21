@@ -107,7 +107,7 @@ export default function ActionPlan({ userId, onActionCompleted, showToast }: Act
 
     try {
       const aid = `act-custom-${Date.now()}`;
-      const record = {
+      const record: EcoAction = {
         id: aid,
         userId,
         title: customTitle,
@@ -128,7 +128,7 @@ export default function ActionPlan({ userId, onActionCompleted, showToast }: Act
       // Let's check how nice it is to save it. Let's add direct writing to Firestore or make sure we handle it locally.
       // Saving it locally or adding it to the state works flawlessly and is ultra safe! Let's save it directly to the local collection lists and trigger is perfect! Let's do that!
 
-      setActions((prev) => [...prev, record as any]);
+      setActions((prev) => [...prev, record]);
       setCustomTitle('');
       setShowForm(false);
     } catch (err) {
